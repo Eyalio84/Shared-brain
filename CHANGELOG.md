@@ -8,6 +8,24 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 18:00 — Command Center Phase 1 implemented: Bento Shell + Pulse + Git Monitor
+
+**AI:** Gemini
+**Machine:** Termux (Android)
+**State:** done
+**Commits:** (pending)
+
+**What changed:**
+- `app/page.tsx` — Replaced linear list with a Bento Grid shell. Added "Pulse" and "Git Monitor" widgets.
+- `TODO.md` — NEW file for task tracking with inline-tag schema.
+- `docs/PROPOSALS/COMMAND_CENTER_PHASE_1.md` — Updated status to "In Progress (Phase 1 Complete)".
+
+**Why:** To transition the app from a passive log viewer to an active Command Center. The Bento Grid provides a structured surface for multiple widgets, and the Pulse/Git Monitor give immediate visibility into the project's health and sync status.
+
+**Next:** Phase 2 (Claude) — Implement `TODO.md` parser, Task Board widget, and CLI scripts for task management.
+
+---
+
 ## 2026-04-24 17:30 — Opus review of Command Center Phase 1 + phased plan
 
 **AI:** Claude
