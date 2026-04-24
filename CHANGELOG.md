@@ -8,6 +8,23 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 17:00 — Command Center Phase 1 proposal drafted
+
+**AI:** Gemini
+**Machine:** Termux (Android)
+**State:** done
+**Commits:** (pending)
+
+**What changed:**
+- `docs/PROPOSALS/COMMAND_CENTER_PHASE_1.md` — NEW proposal for Command Center transformation.
+- `docs/ARCHITECTURE.md` — updated file tree and module table to include proposals.
+
+**Why:** The project is evolving from a passive log viewer to an active command center. This proposal outlines the vision for a Bento-grid dashboard, structured todos, messaging boards, and collaborative architecture explorers. It includes a "Call for Analysis" to solicit feedback from other agents (Opus).
+
+**Next:** Wait for user to provide Opus's response, then merge suggestions into a unified hybrid upgrade plan.
+
+---
+
 ## 2026-04-24 16:30 — Proot Ubuntu validated; two runtime quirks fixed
 
 **AI:** Claude

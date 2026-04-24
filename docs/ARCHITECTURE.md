@@ -18,7 +18,9 @@ shared-brain/
 │           └── route.ts   GET /api/commits → recent git log as JSON
 ├── docs/
 │   ├── ARCHITECTURE.md    This file
-│   └── DECISIONS.md       Rationale log
+│   ├── DECISIONS.md       Rationale log
+│   └── PROPOSALS/         Future upgrade designs
+│       └── COMMAND_CENTER_PHASE_1.md
 ├── scripts/
 │   └── smoke.sh           Typecheck + build sanity
 ├── public/                Static assets (Next default)
@@ -42,6 +44,7 @@ find . -maxdepth 3 -not -path './node_modules/*' -not -path './.next/*' -not -pa
 | `app/page.tsx` | Session Log viewer. Reads `CHANGELOG.md` from disk, parses entries, renders timeline. | Server component; uses `node:fs` directly. Runtime: nodejs. |
 | `app/api/commits/route.ts` | Returns the last 20 commits as JSON. | Shells out to `git log` via a Node child process. Node runtime. Dynamic (no caching). |
 | `app/globals.css` | Tailwind v4 base + project tokens. | Tailwind v4 uses `@import "tailwindcss";` — no separate config file unless overrides needed. |
+| `docs/PROPOSALS/` | Design documents for major feature upgrades. | Active proposal: Command Center Phase 1. |
 
 ## Data flow
 
