@@ -68,6 +68,20 @@ Every entry uses all six fields.
 
 Only ONE agent works at a time. The user is the lock mechanism — they coordinate which agent runs when. The `State: in-flight` field in the latest CHANGELOG entry is an advisory signal you respect, not a technical lock.
 
+## Platform scope
+
+Not every machine runs every part of this project. Know your environment.
+
+| Platform | Edit code | `npm install` | `npm run dev` | `npm run build` | Typecheck |
+|---|---|---|---|---|---|
+| **Termux (Android)** | yes | with `--no-bin-links --ignore-scripts` | **no** (dlopen wall) | **no** (dlopen wall) | yes — invoke `node ./node_modules/typescript/bin/tsc --noEmit` |
+| **Proot Ubuntu** | yes | yes (plain) | yes | yes | yes |
+| **Laptop / PC (macOS / Linux / Windows)** | yes | yes (plain) | yes | yes | yes |
+
+**Why Termux can't run the app:** Android's dynamic linker refuses to `dlopen` native `.node` modules from `/storage/emulated/`. This affects `lightningcss` (Tailwind v4's CSS parser), `sharp` (next/image optimizer), and any future native module. See `docs/DECISIONS.md` for the full finding.
+
+Termux is an editing station. Runtime happens elsewhere via git sync. If you're on Termux and tempted to run `npm run dev`, stop — commit, push, and run it in proot Ubuntu or on laptop.
+
 ## Conventions
 
 - **Files:** `app/` for routes (Next 16 App Router). No `src/` directory.

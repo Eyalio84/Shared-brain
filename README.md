@@ -11,20 +11,21 @@ Next.js 16 (App Router, webpack mode) · React 19 · Tailwind v4 · TypeScript 5
 ## Run locally
 
 ```bash
-# On Termux/Android:
-npm install --no-bin-links
-
-# On macOS / Linux / Windows:
+# On proot Ubuntu / macOS / Linux / Windows:
 npm install
-
 npm run dev      # http://localhost:3000
 npm run build
 npm start
+
+# On Termux (edit + typecheck only — cannot run the app):
+npm install --no-bin-links --ignore-scripts
+node ./node_modules/typescript/bin/tsc --noEmit
 ```
 
 **Platform notes:**
-- `--webpack` flag in `package.json` scripts is deliberate — Turbopack is unsupported on Termux/arm64. On other platforms you can remove it to get Turbopack back.
-- `--no-bin-links` is required on Android because `/storage/emulated/0/` is a FUSE filesystem that doesn't support symlinks. Skipping this flag causes the install to fail with EACCES on `node_modules/.bin/`. Not needed on laptop/PC.
+- **Termux (Android) is edit-only.** Android's dynamic linker refuses to load native `.node` modules from `/storage/emulated/`, so `npm run dev` and `npm run build` cannot work there. Use Termux to write code, run typecheck, commit, and push. Run the app in proot Ubuntu (same device, different namespace) or on laptop/PC. See `docs/DECISIONS.md`.
+- **Turbopack is off** — the `--webpack` flag is explicit in `package.json` because Turbopack is unreliable on arm64.
+- **Install flags on Termux** — `--no-bin-links` (FUSE has no symlinks), `--ignore-scripts` (postinstall scripts that use `.bin/` binaries fail without symlinks).
 
 ## For agents (Claude / Gemini / others)
 

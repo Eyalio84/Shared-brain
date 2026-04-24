@@ -4,6 +4,21 @@ Log of non-obvious technical choices. Each entry: what, why, what was rejected. 
 
 ---
 
+## 2026-04-24 — Termux is edit-only; runtime goes to proot Ubuntu or laptop
+
+**Picked:** Treat Termux as an edit + typecheck + commit + push environment. Never run `npm run dev` / `npm run build` on it. Runtime validation happens in proot Ubuntu (same device, different namespace) or on laptop/PC.
+
+**Why:** Android's dynamic linker enforces an OS-level policy: shared libraries (`.so` / `.node`) cannot be `dlopen`-ed from `/storage/emulated/`. The error: `dlopen failed: library ... is not accessible for the namespace "(default)"`. This affects *any* native Node addon — lightningcss (mandatory in our Tailwind v4 stack), sharp, better-sqlite3, etc. It's not a permissions issue and not fixable via flags.
+
+Proot Ubuntu is a full Linux userland rooted on Termux's native ext4 filesystem. `dlopen` works normally there. So the same device can be both editing station (Termux) and runtime host (proot Ubuntu) — via two different process contexts talking to the same git remote.
+
+**Rejected:**
+- **Move project into Termux native home** (`~/shared-brain/`) — would work, but the user explicitly wanted `/storage/emulated/0/Download/claude-projects/` as the editing location (Android file-manager visibility). Moving breaks that.
+- **Strip Tailwind v4 for Tailwind v3 or vanilla CSS** — eliminates *one* native dep but creates a precedent of avoiding native modules for platform reasons. Tomorrow sharp, then better-sqlite3, etc. Stack downgrade for an unfixable root cause.
+- **Mount tricks (bind mount, symlink workarounds)** — brittle and each has its own Android SELinux edge cases.
+
+---
+
 ## 2026-04-23 — AGENTS.md as single source of truth (over parallel CLAUDE.md + GEMINI.md)
 
 **Picked:** Put all shared agent instructions in `AGENTS.md`. `CLAUDE.md` and `GEMINI.md` are thin pointers.

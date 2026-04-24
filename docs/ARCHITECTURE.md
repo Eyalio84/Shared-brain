@@ -63,5 +63,7 @@ Local only for now. Intended to eventually run as a persistent service on the fu
 - **Termux / arm64:** Turbopack crashes. `next dev --webpack` is the only reliable option. Do not remove the flag from `package.json`.
 - **Android FUSE filesystem** (`/storage/emulated/0/`):
   - No symlink support. `npm install` fails without `--no-bin-links`. Tool binaries can't be invoked via `./node_modules/.bin/<tool>` — use `node ./node_modules/<pkg>/bin/<binary>`.
+  - No `dlopen` of shared libraries. Native `.node` Node addons fail to load even when the file is present (Android security policy refuses to map executable memory from external storage). Affects `lightningcss`, `sharp`, any compiled addon.
   - Occasional phantom directory entries that `ls` shows but cannot be opened. Harmless.
+- **Termux scope:** edit + typecheck + commit + push only. Runtime (`npm run dev` / `build`) is delegated to proot Ubuntu (same device, native ext4 fs) or laptop/PC. See `docs/DECISIONS.md`.
 - **Nested git repos:** `/storage/emulated/0/Download/claude-projects/` is itself a git repo pointing to an unrelated project. This repo lives inside it. Git handles the nesting correctly (child repo is opaque to parent), but `git status` in the parent will show `shared-brain/` as untracked.
