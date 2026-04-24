@@ -8,6 +8,38 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 19:30 — Command Center Phase 2: TODO.md parser + Task Board + CLI
+
+**AI:** Claude
+**Machine:** proot Ubuntu (Android)
+**State:** done
+**Commits:** 9881984 (feat), {changelog}
+
+**What changed:**
+- `app/lib/todo.ts` — NEW server-only parser. Exports `parseTodos`, `sortActive`, `loadTodos` and the `Todo` type. Regex captures the checkbox + parens-group + title + optional `— ref:`. Inside the parens, tokens are classified at parse time (priority / owner / ISO date) so tag order is irrelevant.
+- `app/page.tsx` — Task Board widget replaces Gemini's Phase-2 placeholder in the `lg:col-span-4` bento slot. Inline `TaskRow` + `PriorityBadge` components. Shows the top 6 active tasks sorted by priority, with an `N active / M done` counter and `+ X more in TODO.md` overflow indicator.
+- `scripts/todo-add` — NEW. `todo-add <P1|P2|P3> <@owner> "<title>" [ref]` appends a task under `## Active Tasks` via awk.
+- `scripts/todo-done` — NEW. `todo-done "<substring>"` flips the first matching unchecked task to `[x]` and injects today's date into the parens group. Uses awk for matching (grep BRE + bash double-quote escaping mangles `[ ]`) and `sed` for the bracket flip (bash `${var/[ ]/…}` treats brackets as a glob char class). Also renamed an internal variable away from `LINENO` (bash's read-only built-in line-number).
+- `AGENTS.md` — NEW "Task management — TODO.md" section documents the inline-tag schema and the two scripts. File-layout table extended with `TODO.md`, `app/lib/todo.ts`, `scripts/todo-add`, `scripts/todo-done`.
+- `docs/ARCHITECTURE.md` — file tree, module table, and data-flow diagram now reflect the Task Board path and TODO.md parser.
+- `TODO.md` — dogfooded. The two `@claude` Phase-2 items plus Gemini's three `@gemini` Phase-1 items moved to `## Completed Tasks` (Phase 1 shipped and validated). Added Phase 3/4/5 forward-looking items per the alternating plan.
+- `scripts/smoke.sh` — promoted to `100755` in the git index (clone lost the mode bit).
+
+**Why:** Phase 2 of the Command Center plan. Converts the TODO.md file Gemini created in Phase 1 into a first-class interactive surface — parsed by the server, rendered in the bento grid, mutated by CLI scripts rather than UI actions. This preserves the project rule that the UI reflects git state and is never an authority over it: a todo is "done" when TODO.md in git says so, not when a button is clicked. Dogfooded by completing the two Phase-2 tasks and cleaning up orphaned Phase-1 items (@gemini) that had shipped but weren't marked done.
+
+**Bugs surfaced and fixed in-session:**
+1. `${ORIGINAL/- [ ]/- [x]}` — bash parameter substitution treats `[ ]` as a glob character class, not a literal. Swapped for `sed`.
+2. `LINENO=…` assignment silently no-op'd (bash built-in read-only); awk was rewriting the wrong line. Renamed to `MATCH_LINE`.
+3. `grep -in "^- \[ \].*${QUERY}"` inside double quotes — bash strips the backslashes before grep sees them, turning `\[ \]` into `[ ]` (a BRE character class matching a single space). Rewrote the match in awk where the regex grammar is stable across environments.
+
+**Next:** Phase 3 (@gemini) — create `docs/BRIEFS.md` + Briefing Board widget (full-width bento row replacing the existing Phase-3 placeholder). Plus the "mid-handoff" mode that promotes an `in-flight` CHANGELOG body into the Pulse zone — Gemini already partially landed this in Phase 1 when they added the amber "Handoff Note" panel, so Phase 3 is mostly the Briefs side. The `@claude` Phase-4 items (Environment Health + Architecture Snapshot + mtime cache) are queued in TODO.md.
+
+**Open questions:**
+- Still open: `Next:` mandatory when `State: done`? (Carried; no decision this session.)
+- New/minor: the `todo-done` matching is case-insensitive substring against the full task line. That's "good enough" for current size but has no unique-id; if two P3 tasks with similar wording exist, the first one wins and the user sees a stderr note. If this bites, add an `--id N` flag that takes the line number straight from the `+ X more` preview. Defer until it bites.
+
+---
+
 ## 2026-04-24 18:00 — Command Center Phase 1 implemented: Bento Shell + Pulse + Git Monitor
 
 **AI:** Gemini
