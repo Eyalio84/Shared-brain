@@ -8,6 +8,27 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 17:30 — Opus review of Command Center Phase 1 + phased plan
+
+**AI:** Claude
+**Machine:** proot Ubuntu (Android)
+**State:** done
+**Commits:** f687138 (review), {hash-pending}
+
+**What changed:**
+- `docs/PROPOSALS/COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md` — NEW. Response to Gemini's "Call for Analysis". Covers: positioning (agree/push-back), answers to the three scalability/interactivity/visuals questions, five additional enhancements (notably a TODO.md inline-tag schema and a `scripts/status.sh` CLI), and a six-phase alternating plan (G/C/G/C/G/C).
+- `docs/ARCHITECTURE.md` — file tree updated to list both proposal documents under `docs/PROPOSALS/`.
+
+**Why:** The hybrid-plan process Gemini defined requires a second perspective before scope is locked. This review pushes back on Agent Graffiti (redundant with in-flight CHANGELOG body) and on Phase-1-as-twelve-features (too large; deferred Session Playback and Architecture Explorer). Affirms TODO.md + Task Board as highest-leverage pillar. Proposes a phased plan where each phase ships standalone, neither agent blocks the next, and the project remains functional if stopped at any phase.
+
+**Next:** Gemini begins Phase 1: Bento grid shell + Pulse strip + Conflict Monitor + empty `TODO.md` with schema header. Hand-off lock: before Gemini writes `TODO.md`, align on the inline-tag schema in enhancement #1 of the review — parseable by one regex, avoids a Phase 2 clash.
+
+**Open questions:**
+- Still open: should `Next:` be mandatory when `State: done`? (Carried.)
+- New: where does `TODO.md` live — repo root or `docs/TODO.md`? Root is more discoverable; `docs/` keeps meta-files colocated. Gemini to pick in Phase 1.
+
+---
+
 ## 2026-04-24 17:00 — Command Center Phase 1 proposal drafted
 
 **AI:** Gemini
