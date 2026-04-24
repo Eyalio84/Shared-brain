@@ -1,8 +1,10 @@
-import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { loadTodos, sortActive, type Todo } from "./lib/todo";
 import { loadBriefs, type Brief } from "./lib/briefs";
+import { cachedFileParse } from "./lib/cache";
+import { detectEnv, type Capability } from "./lib/env";
+import { loadArchitecture, type ModuleRow } from "./lib/architecture";
 
 type EntryState = "done" | "in-flight";
 
@@ -199,6 +201,53 @@ function BriefRow({ brief }: { brief: Brief }) {
   );
 }
 
+function CapabilityRow({ cap }: { cap: Capability }) {
+  const dot =
+    cap.status === "yes"
+      ? "bg-emerald-500"
+      : cap.status === "no"
+        ? "bg-red-500"
+        : "bg-amber-500";
+  const label =
+    cap.status === "yes" ? "yes" : cap.status === "no" ? "no" : "conditional";
+  return (
+    <li className="flex items-start gap-2 py-1 text-xs">
+      <span className={`mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} aria-hidden />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-zinc-800 dark:text-zinc-200">{cap.name}</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+            {label}
+          </span>
+        </div>
+        {cap.note && (
+          <p className="mt-0.5 font-mono text-[10px] leading-snug text-zinc-400">{cap.note}</p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ModuleTableRow({ row }: { row: ModuleRow }) {
+  return (
+    <li className="border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-900">
+      <div className="flex items-baseline justify-between gap-3">
+        <code className="truncate font-mono text-[11px] font-semibold text-zinc-900 dark:text-zinc-100">
+          {row.path}
+        </code>
+      </div>
+      <p className="mt-0.5 text-[11px] leading-snug text-zinc-600 dark:text-zinc-400">
+        <InlineMarkdown text={row.role} />
+      </p>
+      {row.notable && (
+        <p className="mt-0.5 text-[10px] leading-snug italic text-zinc-400">
+          <InlineMarkdown text={row.notable} />
+        </p>
+      )}
+    </li>
+  );
+}
+
 const TASK_BOARD_LIMIT = 6;
 
 function StatusCard({ title, children, className = "" }: { title: string, children: React.ReactNode, className?: string }) {
@@ -214,17 +263,18 @@ function StatusCard({ title, children, className = "" }: { title: string, childr
 
 export default function Home() {
   const changelogPath = path.join(process.cwd(), "CHANGELOG.md");
-  const md = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, "utf-8") : "";
-  const entries = parseChangelog(md);
+  const entries = cachedFileParse(changelogPath, parseChangelog);
   const latest = entries[0];
   const gitStatus = getGitStatus();
-  
+
   const todos = loadTodos();
   const activeTasks = sortActive(todos);
   const doneCount = todos.filter((t) => t.done).length;
   const taskOverflow = Math.max(0, activeTasks.length - TASK_BOARD_LIMIT);
 
   const briefs = loadBriefs();
+  const env = detectEnv();
+  const modules = loadArchitecture();
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
@@ -376,6 +426,38 @@ export default function Home() {
               {briefs.map((b, i) => (
                 <BriefRow key={i} brief={b} />
               ))}
+            </div>
+          )}
+        </StatusCard>
+
+        {/* Environment Health — detects current machine + capabilities */}
+        <StatusCard title="Environment" className="lg:col-span-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-mono text-sm font-bold text-zinc-900 dark:text-zinc-100">
+              {env.label}
+            </span>
+            <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              {env.machine}
+            </span>
+          </div>
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-900">
+            {env.capabilities.map((cap, i) => (
+              <CapabilityRow key={i} cap={cap} />
+            ))}
+          </ul>
+        </StatusCard>
+
+        {/* Architecture Snapshot — rendered module table */}
+        <StatusCard title="Architecture" className="lg:col-span-8">
+          {modules.length === 0 ? (
+            <p className="text-xs text-zinc-500 italic">No module table found in docs/ARCHITECTURE.md.</p>
+          ) : (
+            <div className="max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+              <ul>
+                {modules.map((row, i) => (
+                  <ModuleTableRow key={i} row={row} />
+                ))}
+              </ul>
             </div>
           )}
         </StatusCard>

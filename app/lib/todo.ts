@@ -1,5 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
+import { cachedFileParse } from "./cache";
 
 export type TodoPriority = "P1" | "P2" | "P3";
 
@@ -70,7 +70,5 @@ export function sortActive(todos: Todo[]): Todo[] {
 }
 
 export function loadTodos(): Todo[] {
-  const todoPath = path.join(process.cwd(), "TODO.md");
-  if (!fs.existsSync(todoPath)) return [];
-  return parseTodos(fs.readFileSync(todoPath, "utf-8"));
+  return cachedFileParse(path.join(process.cwd(), "TODO.md"), parseTodos);
 }

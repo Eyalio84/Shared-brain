@@ -4,6 +4,22 @@ Log of non-obvious technical choices. Each entry: what, why, what was rejected. 
 
 ---
 
+## 2026-04-24 — In-memory mtime cache for markdown reads (no request-time reparse)
+
+**Picked:** A single module-level `Map<path, {mtimeMs, value}>` in `app/lib/cache.ts`. Exported as `cachedFileParse(path, parser)`. On each call: `fs.statSync(path).mtimeMs` compared to the cached value; reuse cache if unchanged, else `readFileSync` + parse + overwrite entry. Lifetime is the Node process.
+
+**Why:** All markdown reads (`CHANGELOG.md`, `TODO.md`, `docs/BRIEFS.md`, `docs/ARCHITECTURE.md`) previously ran `fs.readFileSync` + a regex parse on every request — cheap today, linear in file size forever. Mtime gives us a truly-invalidated cache at zero coordination cost: the filesystem already tracks "has this changed?" The cache is invisible to callers (same function signature as before). It also lets us treat mtime as a free invalidation signal when the CLI scripts (`todo-done`, `todo-add`) or an agent edit markdown directly — the very next UI request re-parses automatically. No hooks, no manual `/revalidate` endpoint, no `revalidateTag` orchestration.
+
+**Process-scoped lifetime is deliberate.** Shared Brain runs as a single Next.js server process; there's no worker pool, no multi-region deploy. A module-level Map is the simplest thing that works. If the architecture ever grows to multiple processes (unlikely for this project), we upgrade to a shared store — but premature distribution would complicate the synchronous `loadTodos() → Todo[]` shape without buying anything today.
+
+**Rejected:**
+- **Next.js `unstable_cache` / `revalidateTag`** — request-scoped semantics and a route-aware API we don't need; the parser is pure, the invalidation signal is mtime, and we want results memoised *across* requests without touching Next internals that may churn.
+- **A `post-commit` git hook writing `.cache/*.json`** — considered in the Phase 1 Opus review as "Option B" for scalability. Over-engineered for today: it buys determinism but costs a hook, a generated artifact in the repo, and a synchronisation point between commit and server startup. Revisit only if filtering/faceting ever needs precomputed data.
+- **No caching, just rely on OS page cache** — the parse itself isn't free (regex over the whole file), and filling an LRU-like structure with the parsed output is what we actually want to reuse.
+- **A TTL (e.g. 5s)** — either useless (mtime already tells us) or wrong (stale data served to agents who just ran `todo-done`). Mtime is the only correct invalidation key here.
+
+---
+
 ## 2026-04-24 — Proot runtime quirks: bake `-H localhost`; detect Termux via `$PREFIX`
 
 **Picked (1):** Bake `-H localhost` into the `dev` script in `package.json`. `package.json` is the one copy of the command shared across every machine, and the flag is harmless outside proot.

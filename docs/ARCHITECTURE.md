@@ -15,8 +15,11 @@ shared-brain/
 │   ├── page.tsx           Command Center dashboard (Bento widgets)
 │   ├── globals.css        Tailwind base + tokens
 │   ├── lib/
+│   │   ├── cache.ts       Generic mtime-based parse cache (server-only)
 │   │   ├── todo.ts        TODO.md parser (server-only)
-│   │   └── briefs.ts      docs/BRIEFS.md parser (server-only)
+│   │   ├── briefs.ts      docs/BRIEFS.md parser (server-only)
+│   │   ├── env.ts         Current-machine detector (Termux/proot/laptop)
+│   │   └── architecture.ts  Module-table parser for ARCHITECTURE.md
 │   └── api/
 │       └── commits/
 │           └── route.ts   GET /api/commits → recent git log as JSON
@@ -49,9 +52,12 @@ find . -maxdepth 3 -not -path './node_modules/*' -not -path './.next/*' -not -pa
 | Path | Role | Notable |
 |---|---|---|
 | `app/layout.tsx` | Root layout. Loads Geist fonts, sets metadata. | Server component. |
-| `app/page.tsx` | Command Center dashboard. Renders Bento widgets: Pulse, Git Monitor, Task Board, Session Log, Briefing Board. Reads `CHANGELOG.md` + `TODO.md` + `docs/BRIEFS.md` + `git status` from disk. | Server component; `node:fs` + `child_process` directly. Runtime: nodejs. |
-| `app/lib/todo.ts` | Parses `TODO.md` inline-tag schema into typed `Todo` objects. | Pure module (fs-reader only in `loadTodos()`). Exports `parseTodos`, `sortActive`, `loadTodos`. |
-| `app/lib/briefs.ts` | Parses `docs/BRIEFS.md` into typed `Brief` objects. | Server-only helper. |
+| `app/page.tsx` | Command Center dashboard. Renders Bento widgets: Pulse, Git Monitor, Task Board, Session Log, Briefing Board, Environment, Architecture. Reads `CHANGELOG.md` + `TODO.md` + `docs/BRIEFS.md` + `docs/ARCHITECTURE.md` + `git status` from disk. | Server component; all markdown reads go through `app/lib/cache.ts`. Runtime: nodejs. |
+| `app/lib/cache.ts` | Generic mtime-based parse cache. `cachedFileParse(path, parser)` stats mtime, returns cached value if unchanged, reparses otherwise. | Module-level `Map`; process-scoped lifetime. No TTL — invalidation is entirely mtime-driven. |
+| `app/lib/todo.ts` | Parses `TODO.md` inline-tag schema into typed `Todo` objects. | Routed through `cache.ts`. Exports `parseTodos`, `sortActive`, `loadTodos`. |
+| `app/lib/briefs.ts` | Parses `docs/BRIEFS.md` into typed `Brief` objects. | Routed through `cache.ts`. |
+| `app/lib/env.ts` | Detects the current machine (Termux / proot Ubuntu / laptop) and returns a capability matrix matching the AGENTS.md platform-scope table. | Memoised per process. Termux via `$PREFIX`, proot via `uname -a` containing `PRoot-Distro`, else `process.platform`. |
+| `app/lib/architecture.ts` | Parses the `## Module table` section of `docs/ARCHITECTURE.md` into typed rows. | Routed through `cache.ts`. |
 | `app/api/commits/route.ts` | Returns the last 20 commits as JSON. | Shells out to `git log` via a Node child process. Node runtime. Dynamic (no caching). |
 | `app/globals.css` | Tailwind v4 base + project tokens. | Tailwind v4 uses `@import "tailwindcss";` — no separate config file unless overrides needed. |
 | `docs/PROPOSALS/` | Design documents for major feature upgrades. | Active proposal: Command Center Phase 1. |
@@ -61,14 +67,16 @@ find . -maxdepth 3 -not -path './node_modules/*' -not -path './.next/*' -not -pa
 The dashboard is a read-only projection of repo state:
 
 ```
-CHANGELOG.md  →  app/page.tsx (fs.readFileSync)    →  parseChangelog()   →  Pulse + Session Log
-TODO.md       →  app/lib/todo.ts (loadTodos)       →  parseTodos()       →  Task Board
-docs/BRIEFS.md →  app/lib/briefs.ts (loadBriefs)   →  loadBriefs()       →  Briefing Board
-git status    →  app/page.tsx (execSync)           →  getGitStatus()     →  Git Monitor
-git log       →  app/api/commits (child process)   →  JSON               →  (future: client fetch)
+CHANGELOG.md         →  cache ─►  parseChangelog()     →  Pulse + Session Log
+TODO.md              →  cache ─►  parseTodos()         →  Task Board
+docs/BRIEFS.md       →  cache ─►  parseBriefs()        →  Briefing Board
+docs/ARCHITECTURE.md →  cache ─►  parseModuleTable()   →  Architecture widget
+runtime env          →  detectEnv() (memoised)         →  Environment widget
+git status           →  getGitStatus() (execSync)      →  Git Monitor
+git log              →  app/api/commits (child process) →  JSON → (future: client fetch)
 ```
 
-No database. No client-side state. Mutations to todos happen via `scripts/todo-add` / `scripts/todo-done`, which edit `TODO.md` in place — the UI reflects the change on next request.
+All markdown reads go through `app/lib/cache.ts` — the parser runs once per mtime change, not per request. No database. No client-side state. Mutations to todos happen via `scripts/todo-add` / `scripts/todo-done`, which edit `TODO.md` in place — the UI reflects the change on next request (cache invalidates via mtime bump).
 
 ## Build + deploy
 
