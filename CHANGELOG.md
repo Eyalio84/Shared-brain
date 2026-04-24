@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Claude
 **Machine:** proot Ubuntu (Android)
 **State:** done
-**Commits:** 805b726 (feat), {changelog}
+**Commits:** 805b726 (feat), e3a8b43 (changelog)
 
 **What changed:**
 - `app/lib/cache.ts` — NEW. `cachedFileParse(path, parser)` — module-level `Map<path, {mtimeMs, value}>`. Parses once, re-parses only when the file's mtime changes. Missing files pass an empty string to the parser (keeps `parseTodos` / `parseBriefs` / etc. returning empty arrays). Process-scoped lifetime; no TTL.
