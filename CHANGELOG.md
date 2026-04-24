@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Claude
 **Machine:** Termux (Android)
 **State:** done
-**Commits:** d4f5c0c (bootstrap), (this commit — session close)
+**Commits:** d4f5c0c (bootstrap), c1dbdf2 (session close)
 
 **What changed:**
 - `package.json` — reverted scripts to plain `next dev --webpack` / `next build --webpack`. The `node ./node_modules/next/dist/bin/next ...` form was a Termux-symlink workaround; no environment that actually runs the app needs it.
