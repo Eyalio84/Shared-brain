@@ -12,8 +12,11 @@ command -v npm >/dev/null || fail "npm not found on PATH"
 [ -d node_modules ] || fail "node_modules missing — run 'npm install' (on Termux: 'npm install --no-bin-links --ignore-scripts')"
 
 # Detect Termux — runtime (build) is blocked there by Android's dlopen policy.
+# $PREFIX points into com.termux inside Termux; proot-distro enters a chroot
+# where $PREFIX is unset or points elsewhere. This signal survives even though
+# /data/data/com.termux is visible from proot via shared mount.
 IS_TERMUX=0
-[ -d /data/data/com.termux ] && [ -z "${PROOT_ROOT:-}" ] && IS_TERMUX=1
+[[ "${PREFIX:-}" == *com.termux* ]] && IS_TERMUX=1
 
 echo "[...] typecheck"
 # Direct node invocation works on every platform and doesn't need .bin/ symlinks.

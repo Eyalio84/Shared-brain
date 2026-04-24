@@ -4,6 +4,28 @@ Log of non-obvious technical choices. Each entry: what, why, what was rejected. 
 
 ---
 
+## 2026-04-24 — Proot runtime quirks: bake `-H localhost`; detect Termux via `$PREFIX`
+
+**Picked (1):** Bake `-H localhost` into the `dev` script in `package.json`. `package.json` is the one copy of the command shared across every machine, and the flag is harmless outside proot.
+
+**Why:** In proot Ubuntu, `next dev` with no explicit host crashes at startup on `os.networkInterfaces()` with `errno 13 / Unknown system error 13` (EACCES on `uv_interface_addresses`). Proot's seccomp/netlink sandbox denies the interface enumeration that Next uses to print the "Network:" banner URL. Next's own code (`start-server.js:289`) short-circuits the lookup when an explicit hostname is passed: `hostname ?? getNetworkHost(...)`. The `-H localhost` flag turns that into a no-op. On laptop/PC the flag just restricts dev-server binding to loopback, which is what most developers want anyway — no exposure on LAN by default.
+
+**Rejected:**
+- **Platform-detect at runtime and add `-H` only in proot** — more code, more ways to break, and the flag is harmless everywhere.
+- **Catch the rejection globally via `process.on('unhandledRejection', ...)`** — masks the error but doesn't fix the broken startup path; the banner code still throws.
+- **Patch `get-network-host.js` locally** — modifying `node_modules` is not survivable across reinstalls.
+
+**Picked (2):** Detect Termux in `scripts/smoke.sh` by testing whether `$PREFIX` contains `com.termux`, not by checking for `/data/data/com.termux` existence.
+
+**Why:** The old test (`[ -d /data/data/com.termux ] && [ -z "$PROOT_ROOT" ]`) returned true inside proot Ubuntu: proot-distro bind-mounts the Termux app directory (shared `/data/data/com.termux` namespace) and does not export `PROOT_ROOT`. So smoke skipped the build step on proot — the exact environment where build is supposed to run. `$PREFIX` is Termux's canonical env var (`/data/data/com.termux/files/usr`) set in its shell init; proot-distro enters a fresh chroot where `$PREFIX` is unset. That makes it a reliable "am I *actually* running as a Termux process" test.
+
+**Rejected:**
+- **`uname -a` contains `PRoot-Distro`** — inverted signal (detect non-Termux instead of Termux), fragile against future proot-distro kernel naming changes.
+- **Check `/etc/os-release`** — Termux has its own `/etc/os-release`; not distinctive enough.
+- **Probe for `termux-info` binary in `$PATH`** — spawns a subprocess for every run; `$PREFIX` is a zero-cost string check.
+
+---
+
 ## 2026-04-24 — Termux is edit-only; runtime goes to proot Ubuntu or laptop
 
 **Picked:** Treat Termux as an edit + typecheck + commit + push environment. Never run `npm run dev` / `npm run build` on it. Runtime validation happens in proot Ubuntu (same device, different namespace) or on laptop/PC.

@@ -8,6 +8,31 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 16:30 — Proot Ubuntu validated; two runtime quirks fixed
+
+**AI:** Claude
+**Machine:** proot Ubuntu (Android, same device as Termux)
+**State:** done
+**Commits:** (pending)
+
+**What changed:**
+- `package.json` — added `-H localhost` to the `dev` script. Without it, `next dev` crashes on proot with `uv_interface_addresses: Unknown system error 13` (EACCES on `os.networkInterfaces()`). With an explicit hostname, Next skips that lookup path entirely (see `next/dist/server/lib/start-server.js:289` — `hostname ?? getNetworkHost(...)`). Harmless on laptop/PC.
+- `scripts/smoke.sh` — replaced the Termux-detection test. Old: `[ -d /data/data/com.termux ] && [ -z "$PROOT_ROOT" ]`. That failed in proot because (a) the termux directory is visible through proot's shared mount, and (b) proot-distro doesn't export `PROOT_ROOT`. New test: `[[ "${PREFIX:-}" == *com.termux* ]]`. `$PREFIX` is Termux's canonical marker and is unset inside the proot chroot.
+- `package-lock.json` — npm on proot stripped `"libc"` arrays from optional-dep entries (added by Termux's npm). Normal cross-environment churn; committed so it doesn't re-churn next install.
+- `HANDOFF.md` — deleted. Served its purpose as a one-shot Termux→proot bridge. A well-written CHANGELOG entry is sufficient for future inter-machine transitions; no reusable template needed.
+- `docs/DECISIONS.md` — added an entry on the two proot runtime quirks and why we picked these fixes.
+- `docs/ARCHITECTURE.md` — "Known constraints" now mentions the proot `networkInterfaces` quirk.
+
+**Why:** The prior session declared proot Ubuntu the runtime home but couldn't validate it. This session validated end-to-end: fresh clone into `/root/Shared-brain`, plain `npm install` (360 packages, 0 vulns), `npm run dev` serves HTTP 200 on `/` and `/api/commits`, `npm run build` completes cleanly (Tailwind v4 `lightningcss` loads fine — confirming the dlopen wall is a FUSE-storage thing, not Android-wide). Two real bugs surfaced and got fixed in-session: the proot `uv_interface_addresses` EACCES and the stale Termux-detection heuristic. Both fixes are minimal and platform-agnostic.
+
+**Next:** n/a — complete. Proot runtime path is validated. Next session can land on any machine and follow the standard Session START ritual.
+
+**Open questions:**
+- Still open: should `Next:` be mandatory when `State: done`? (Carried from bootstrap. Lean toward "yes, even if just 'n/a — complete'" — gives future agents one fewer field to guess about.)
+- Resolved: HANDOFF.md-as-template hypothesis — rejected. CHANGELOG entries are the handoff; no separate template file needed.
+
+---
+
 ## 2026-04-24 14:00 — Platform scope decided; handoff to proot Ubuntu
 
 **AI:** Claude
