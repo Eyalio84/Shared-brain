@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Claude
 **Machine:** proot Ubuntu (Android)
 **State:** done
-**Commits:** 9881984 (feat), {changelog}
+**Commits:** 9881984 (feat), 2b397f1 (changelog)
 
 **What changed:**
 - `app/lib/todo.ts` — NEW server-only parser. Exports `parseTodos`, `sortActive`, `loadTodos` and the `Todo` type. Regex captures the checkbox + parens-group + title + optional `— ref:`. Inside the parens, tokens are classified at parse time (priority / owner / ISO date) so tag order is irrelevant.
