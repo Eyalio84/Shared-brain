@@ -8,6 +8,34 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 21:00 — Command Center Phase 4: Env + Architecture widgets + mtime cache
+
+**AI:** Claude
+**Machine:** proot Ubuntu (Android)
+**State:** done
+**Commits:** 805b726 (feat), {changelog}
+
+**What changed:**
+- `app/lib/cache.ts` — NEW. `cachedFileParse(path, parser)` — module-level `Map<path, {mtimeMs, value}>`. Parses once, re-parses only when the file's mtime changes. Missing files pass an empty string to the parser (keeps `parseTodos` / `parseBriefs` / etc. returning empty arrays). Process-scoped lifetime; no TTL.
+- `app/lib/env.ts` — NEW. `detectEnv()` returns `{ machine, label, capabilities[] }`. Detection order: Termux (via `$PREFIX` containing `com.termux`), then proot Ubuntu (via `uname -a` containing `PRoot-Distro`), else `process.platform` → laptop/PC. Each case ships a 5-row capability matrix mirroring the AGENTS.md platform-scope table (edit / typecheck / npm install / dev / build). Memoised per process.
+- `app/lib/architecture.ts` — NEW. `parseModuleTable(md)` extracts the `## Module table` section of `docs/ARCHITECTURE.md` into typed `ModuleRow[]`. Routed through `cache.ts`. Skips the header and separator rows; strips surrounding backticks from the path cell.
+- `app/lib/todo.ts` + `app/lib/briefs.ts` — refactored to route their file reads through `cachedFileParse`. External API unchanged. `briefs.ts` now exports `parseBriefs` as a pure function separate from `loadBriefs`, matching `todo.ts`'s shape.
+- `app/page.tsx` — CHANGELOG read migrated to the cache. Two new Bento widgets appended as a final row: `Environment` (`lg:col-span-4`) showing the machine label + capability dots (emerald yes, red no, amber conditional) + per-capability notes in mono, and `Architecture` (`lg:col-span-8`) rendering each module-table row with path in mono, role below, notable in italic. Inline `CapabilityRow` + `ModuleTableRow` helper components.
+- `docs/ARCHITECTURE.md` — file tree and module table updated for the three new lib files; data-flow diagram redrawn to show all reads funnelling through the cache.
+- `docs/DECISIONS.md` — added an entry explaining the module-level mtime cache: why it's the right scope, what was rejected (Next `unstable_cache`, git `post-commit` hook JSON, TTL-based expiry, no caching).
+- `TODO.md` — both `@claude` Phase-4 items closed via `./scripts/todo-done` (dogfood).
+
+**Why:** Phase 4 of the alternating plan. Environment Health dogfoods the very platform-scope table we've been maintaining in AGENTS.md — glance at the dashboard, immediately know whether this machine can run `dev` or is edit-only. Architecture Snapshot turns the module table into a live view so new contributors (human or agent) can browse the repo's structure without opening a second file. The mtime cache was queued as a latent performance tidy but lands naturally here: all four markdown-reading paths share one invalidation mechanism, and the CLI scripts' existing edit-then-mtime-bump flow triggers re-parse for free on the next request.
+
+**Next:** Phase 5 (@gemini) — visual polish. Typography scale, semantic color palette, mobile-first review (Termux browser is a first-class viewport), dark-mode pass if anything drifted. The widgets are in place; Phase 5 is about tightening the visual vocabulary across all of them.
+
+**Open questions:**
+- Still open: `Next:` mandatory when `State: done`? (Carried, no decision this session.)
+- Resolved in this session: mtime cache is sufficient for scalability — no need for the `post-commit` JSON-manifest option from the Opus review. Revisit only if filtering / server-side search ever needs precomputed data.
+- Minor: `detectEnv()` caches once per process. If the env ever matters mid-lifetime (e.g. moving the working directory mid-session), refresh. No known case today.
+
+---
+
 ## 2026-04-24 20:00 — Command Center Phase 3: Briefing Board + Markdown improvements
 
 **AI:** Gemini
