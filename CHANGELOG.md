@@ -8,6 +8,33 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 23:00 — Command Center Phase 6: session-close script + Phase 2 proposal
+
+**AI:** Claude
+**Machine:** proot Ubuntu (Android)
+**State:** done
+**Commits:** f348b65
+
+**What changed:**
+- `scripts/session-close` — NEW. Automates the AGENTS.md Session END commit dance: stage feature files, write CHANGELOG with `{hash}` placeholder, run `./scripts/session-close "feat: message"`. It commits the staged files, substitutes the short hash into the placeholder, commits CHANGELOG, and pushes (opt-out with `--no-push`). Replaces the ad-hoc 2-3 commit sequence I was doing manually every session. Error messages are strict on preconditions: `{hash}` must be present, something must be staged, and CHANGELOG.md must NOT already be staged.
+- `docs/PROPOSALS/COMMAND_CENTER_PHASE_2.md` — NEW. Declares Phase 1 complete (7 widgets, 3 libs, 4 scripts, polished), tabulates what shipped per phase, and frames three candidate pillars for Phase 2: **A** live awareness (SSE file-watcher + stale affordance), **B** session auditing (script-invocation log + activity widget), **C** multi-project (extract a `shared-brain` CLI that renders any repo following the conventions). Includes a "Call for Analysis" section mirroring Gemini's Phase 1 proposal — four questions for Gemini + Eyal to adjudicate before alternating phases resume.
+- `AGENTS.md` — Session END section rewritten: the old steps 5-7 (`git add` → `git commit` → `git push`) collapse into a single `./scripts/session-close` call, with the placeholder convention documented in step 2. File-layout table gets a row for the new script.
+- `docs/ARCHITECTURE.md` — file tree lists the new script and the Phase 2 proposal doc.
+- `TODO.md` — all checked-off items migrated from Active to Completed. One new `@human` active task: choose the Phase 2 pillar. This session's two Phase-6 sub-tasks (A + C) recorded as completed.
+
+**Why:** Phase 6 was the reserved buffer slot. The user picked A (session-close automation) + C (Phase 2 proposal). Both address real friction: the 2-3 commit hash-fill dance was self-imposed tedium every session, and the alternating plan had run its six phases — the project needs a scoping conversation before it continues on rails. The proposal deliberately scopes to three pillars, not ten, and asks Gemini to adjudicate first-pick rather than mandating one.
+
+**Dogfood:** this very CHANGELOG entry was committed via `./scripts/session-close "feat: Phase 6 — session-close script + Phase 2 proposal"`. If you're reading this with a real short-hash in the `Commits:` line above, the script worked.
+
+**Next:** Eyal relays the Phase 2 proposal to Gemini. Gemini responds (likely drafts `docs/PROPOSALS/COMMAND_CENTER_PHASE_2_GEMINI_REVIEW.md` or similar, mirroring how I responded to their Phase 1 Call for Analysis). Eyal adjudicates the pillar. Alternating phases resume with whichever pillar wins — probably 4 sub-phases (A1/B1/A2/B2) regardless of which pillar comes first. Command Center Phase 1 is declared complete.
+
+**Open questions:**
+- Still open: `Next:` mandatory when `State: done`? — leaning toward "yes, even if 'n/a'" after six phases of confirming it matters at handoff. Not formally decided.
+- Now answered: Session Playback and Architecture Explorer remain deferred. They never surfaced as real needs across six phases of actual use.
+- New: should `TODO.md`'s `## Completed Tasks` be pruned or archived? The list is growing. Candidate answer for Phase 2: a `scripts/todo-archive` that moves entries older than N days to `docs/TODO_ARCHIVE.md`. Defer.
+
+---
+
 ## 2026-04-24 22:00 — Command Center Phase 5: Visual Polish pass
 
 **AI:** Gemini
