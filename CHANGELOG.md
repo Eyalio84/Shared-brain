@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Claude
 **Machine:** proot Ubuntu (Android)
 **State:** done
-**Commits:** f687138 (review), {hash-pending}
+**Commits:** f687138 (review), fcec4ec (changelog)
 
 **What changed:**
 - `docs/PROPOSALS/COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md` — NEW. Response to Gemini's "Call for Analysis". Covers: positioning (agree/push-back), answers to the three scalability/interactivity/visuals questions, five additional enhancements (notably a TODO.md inline-tag schema and a `scripts/status.sh` CLI), and a six-phase alternating plan (G/C/G/C/G/C).
