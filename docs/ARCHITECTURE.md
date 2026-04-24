@@ -15,13 +15,15 @@ shared-brain/
 │   ├── page.tsx           Command Center dashboard (Bento widgets)
 │   ├── globals.css        Tailwind base + tokens
 │   ├── lib/
-│   │   └── todo.ts        TODO.md parser (server-only)
+│   │   ├── todo.ts        TODO.md parser (server-only)
+│   │   └── briefs.ts      docs/BRIEFS.md parser (server-only)
 │   └── api/
 │       └── commits/
 │           └── route.ts   GET /api/commits → recent git log as JSON
 ├── docs/
 │   ├── ARCHITECTURE.md    This file
 │   ├── DECISIONS.md       Rationale log
+│   ├── BRIEFS.md          Persistent goals (parsed by UI Briefing Board)
 │   └── PROPOSALS/         Future upgrade designs
 │       ├── COMMAND_CENTER_PHASE_1.md
 │       └── COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md
@@ -47,8 +49,9 @@ find . -maxdepth 3 -not -path './node_modules/*' -not -path './.next/*' -not -pa
 | Path | Role | Notable |
 |---|---|---|
 | `app/layout.tsx` | Root layout. Loads Geist fonts, sets metadata. | Server component. |
-| `app/page.tsx` | Command Center dashboard. Renders Bento widgets: Pulse, Git Monitor, Task Board, Session Log, Briefing Board placeholder. Reads `CHANGELOG.md` + `TODO.md` + `git status` from disk. | Server component; `node:fs` + `child_process` directly. Runtime: nodejs. |
+| `app/page.tsx` | Command Center dashboard. Renders Bento widgets: Pulse, Git Monitor, Task Board, Session Log, Briefing Board. Reads `CHANGELOG.md` + `TODO.md` + `docs/BRIEFS.md` + `git status` from disk. | Server component; `node:fs` + `child_process` directly. Runtime: nodejs. |
 | `app/lib/todo.ts` | Parses `TODO.md` inline-tag schema into typed `Todo` objects. | Pure module (fs-reader only in `loadTodos()`). Exports `parseTodos`, `sortActive`, `loadTodos`. |
+| `app/lib/briefs.ts` | Parses `docs/BRIEFS.md` into typed `Brief` objects. | Server-only helper. |
 | `app/api/commits/route.ts` | Returns the last 20 commits as JSON. | Shells out to `git log` via a Node child process. Node runtime. Dynamic (no caching). |
 | `app/globals.css` | Tailwind v4 base + project tokens. | Tailwind v4 uses `@import "tailwindcss";` — no separate config file unless overrides needed. |
 | `docs/PROPOSALS/` | Design documents for major feature upgrades. | Active proposal: Command Center Phase 1. |
@@ -60,6 +63,7 @@ The dashboard is a read-only projection of repo state:
 ```
 CHANGELOG.md  →  app/page.tsx (fs.readFileSync)    →  parseChangelog()   →  Pulse + Session Log
 TODO.md       →  app/lib/todo.ts (loadTodos)       →  parseTodos()       →  Task Board
+docs/BRIEFS.md →  app/lib/briefs.ts (loadBriefs)   →  loadBriefs()       →  Briefing Board
 git status    →  app/page.tsx (execSync)           →  getGitStatus()     →  Git Monitor
 git log       →  app/api/commits (child process)   →  JSON               →  (future: client fetch)
 ```
@@ -77,6 +81,6 @@ Local only for now. Intended to eventually run as a persistent service on the fu
   - No symlink support. `npm install` fails without `--no-bin-links`. Tool binaries can't be invoked via `./node_modules/.bin/<tool>` — use `node ./node_modules/<pkg>/bin/<binary>`.
   - No `dlopen` of shared libraries. Native `.node` Node addons fail to load even when the file is present (Android security policy refuses to map executable memory from external storage). Affects `lightningcss`, `sharp`, any compiled addon.
   - Occasional phantom directory entries that `ls` shows but cannot be opened. Harmless.
-- **Termux scope:** edit + typecheck + commit + push only. Runtime (`npm run dev` / `build`) is delegated to proot Ubuntu (same device, native ext4 fs) or laptop/PC. See `docs/DECISIONS.md`.
+- **Termux scope:** edit + typecheck + commit + push only. Runtime (`npm run dev` / `build`) is delegated to proot Ubuntu (same device, native x86_64/arm64 fs) or laptop/PC. See `docs/DECISIONS.md`.
 - **Proot Ubuntu networkInterfaces quirk:** `next dev` crashes with `uv_interface_addresses: Unknown system error 13` unless an explicit hostname is passed. The `dev` script in `package.json` has `-H localhost` baked in as the fix. Harmless on laptop/PC. Details in `docs/DECISIONS.md`.
 - **Nested git repos:** `/storage/emulated/0/Download/claude-projects/` is itself a git repo pointing to an unrelated project. This repo lives inside it. Git handles the nesting correctly (child repo is opaque to parent), but `git status` in the parent will show `shared-brain/` as untracked.
