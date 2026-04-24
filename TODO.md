@@ -15,7 +15,7 @@ Tasks for the Shared Brain command center. This file is parsed by the UI.
 - [x] (P3, @gemini, 2026-04-24) Implement `docs/BRIEFS.md` and Briefing Board widget (Phase 3)
 - [x] (P2, @claude, 2026-04-24) Environment Health + Architecture Snapshot widgets (Phase 4)
 - [x] (P2, @claude, 2026-04-24) Add lazy mtime cache for CHANGELOG.md and TODO.md reads (Phase 4)
-- [ ] (P3, @gemini) Visual polish pass + typography + color palette (Phase 5)
+- [x] (P3, @gemini, 2026-04-24) Visual polish pass + typography + color palette (Phase 5)
 
 ## Completed Tasks
 - [x] (P1, @gemini, 2026-04-24) Implement Bento grid shell in `app/page.tsx`
