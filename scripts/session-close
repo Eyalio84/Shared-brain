@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# session-close — automate the AGENTS.md Session END commit dance.
+#
+# Usage:
+#   scripts/session-close [--push | --no-push] "feat: imperative commit message"
+#
+# Preconditions:
+#   - You are in a git work tree.
+#   - CHANGELOG.md is unstaged but edited, and contains the literal placeholder
+#     `{hash}` where the feature commit's short hash should appear.
+#   - At least one non-CHANGELOG file is currently staged.
+#
+# Behaviour:
+#   1. Commit all currently-staged files with the provided message → short-hash X.
+#   2. Replace {hash} → X in CHANGELOG.md (one replacement).
+#   3. Stage + commit CHANGELOG.md as "docs(changelog): record session".
+#   4. Push unless --no-push was passed.
+#
+# The two-commit shape preserves the convention that the CHANGELOG entry
+# references the feature commit (not itself), without relying on --amend.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+die() { echo "session-close: $1" >&2; exit 2; }
+note() { echo "session-close: $1"; }
+
+PUSH=1
+while [ "${1:-}" = "--push" ] || [ "${1:-}" = "--no-push" ]; do
+  case "$1" in
+    --push) PUSH=1 ;;
+    --no-push) PUSH=0 ;;
+  esac
+  shift
+done
+
+[ "$#" -eq 1 ] || { echo "usage: $0 [--push | --no-push] \"<commit message>\"" >&2; exit 2; }
+MSG="$1"
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not in a git work tree"
+[ -f CHANGELOG.md ] || die "CHANGELOG.md not found at repo root"
+
+grep -q '{hash}' CHANGELOG.md || die "CHANGELOG.md does not contain the {hash} placeholder"
+
+if git diff --cached --quiet; then
+  die "nothing is staged — stage your feature files first, then re-run"
+fi
+
+if git diff --cached --name-only | grep -qx 'CHANGELOG.md'; then
+  die "CHANGELOG.md is staged; unstage it (this script handles the second commit)"
+fi
+
+# 1. Feature commit
+git commit -m "$MSG" >/dev/null
+HASH="$(git rev-parse --short HEAD)"
+note "feat commit  ${HASH} — ${MSG}"
+
+# 2. Fill placeholder (first occurrence only)
+TMP="$(mktemp)"
+awk -v h="$HASH" '
+  !filled && index($0, "{hash}") { sub(/\{hash\}/, h); filled = 1 }
+  { print }
+' CHANGELOG.md > "$TMP" && mv "$TMP" CHANGELOG.md
+
+# 3. CHANGELOG commit
+git add CHANGELOG.md
+git commit -m "docs(changelog): record session" >/dev/null
+CLHASH="$(git rev-parse --short HEAD)"
+note "changelog    ${CLHASH}"
+
+# 4. Optional push
+if [ "$PUSH" = "1" ]; then
+  note "pushing to origin..."
+  git push
+  note "pushed ${HASH}..${CLHASH}"
+else
+  note "push skipped (--no-push). Remember: the session isn't closed until pushed."
+fi

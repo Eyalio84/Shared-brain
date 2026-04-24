@@ -31,12 +31,11 @@ This repo is used by multiple agents across machines. Alignment depends on a con
 Triggered by the user saying **"update docs"** (or a near variant). The ritual:
 
 1. Review `git diff` and `git status` for everything changed this session.
-2. Append a new entry to `CHANGELOG.md` using the schema below.
+2. Append a new entry to `CHANGELOG.md` using the schema below. In the `Commits:` field, write the literal placeholder `{hash}` where the feature commit's short hash will land — `scripts/session-close` fills it in automatically.
 3. Update `docs/ARCHITECTURE.md` if the module/component table changed.
 4. Update `docs/DECISIONS.md` if a non-obvious technical choice was made.
-5. `git add <files>` — prefer explicit file names over `git add .` (avoids staging accidentally-created junk).
-6. `git commit -m "<brief message>"` — imperative mood, under 60 chars.
-7. `git push` — **critical**. Without push, the other machine cannot see your work.
+5. `git add <feature files>` — prefer explicit file names over `git add .` (avoids staging accidentally-created junk). **Do not** stage `CHANGELOG.md`; `session-close` commits it separately.
+6. `./scripts/session-close "feat: imperative commit message"` — this runs the two-commit dance: (a) commits the staged feature files, (b) fills `{hash}` in `CHANGELOG.md`, (c) commits `CHANGELOG.md`, (d) pushes. Pass `--no-push` to skip the push step (rare). Without push, the other machine cannot see your work.
 
 ### CHANGELOG.md entry schema
 
@@ -155,6 +154,7 @@ See `docs/ARCHITECTURE.md` for the full tree + module table. Hot files:
 | `scripts/smoke.sh` | Fast health check — typecheck + build. |
 | `scripts/todo-add` | Append a new task to TODO.md. |
 | `scripts/todo-done` | Flip the first matching unchecked task to `[x]` with today's date. |
+| `scripts/session-close` | Session END ritual: commit staged feature files, fill the `{hash}` placeholder in CHANGELOG.md, commit CHANGELOG, push. |
 
 ## When stuck
 

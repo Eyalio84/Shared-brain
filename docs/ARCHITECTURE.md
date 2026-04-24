@@ -29,11 +29,13 @@ shared-brain/
 │   ├── BRIEFS.md          Persistent goals (parsed by UI Briefing Board)
 │   └── PROPOSALS/         Future upgrade designs
 │       ├── COMMAND_CENTER_PHASE_1.md
-│       └── COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md
+│       ├── COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md
+│       └── COMMAND_CENTER_PHASE_2.md
 ├── scripts/
 │   ├── smoke.sh           Typecheck + build sanity
 │   ├── todo-add           Append task to TODO.md
-│   └── todo-done          Flip first matching task to [x]
+│   ├── todo-done          Flip first matching task to [x]
+│   └── session-close      Session END automation (two-commit + push)
 ├── public/                Static assets (Next default)
 ├── next.config.ts
 ├── package.json
