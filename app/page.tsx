@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { loadTodos, sortActive, type Todo } from "./lib/todo";
+import { loadBriefs, type Brief } from "./lib/briefs";
 
 type EntryState = "done" | "in-flight";
 
@@ -94,11 +95,14 @@ function parseEntry(block: string): ChangelogEntry | null {
 }
 
 function InlineMarkdown({ text }: { text: string }) {
-  const parts = text.split(/(`[^`]+`)/);
+  // Simple regex-based markdown parser for:
+  // `code`, **bold**, [text](url)
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/);
+  
   return (
     <>
       {parts.map((part, i) => {
-        if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
+        if (part.startsWith("`") && part.endsWith("`")) {
           return (
             <code
               key={i}
@@ -107,6 +111,29 @@ function InlineMarkdown({ text }: { text: string }) {
               {part.slice(1, -1)}
             </code>
           );
+        }
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return (
+            <strong key={i} className="font-semibold text-zinc-900 dark:text-zinc-100">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        if (part.startsWith("[") && part.includes("](")) {
+          const match = part.match(/\[(.*?)\]\((.*?)\)/);
+          if (match) {
+            return (
+              <a
+                key={i}
+                href={match[2]}
+                className="text-blue-600 underline decoration-blue-200 underline-offset-2 hover:decoration-blue-400 dark:text-blue-400 dark:decoration-blue-800"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {match[1]}
+              </a>
+            );
+          }
         }
         return <span key={i}>{part}</span>;
       })}
@@ -162,6 +189,16 @@ function TaskRow({ todo }: { todo: Todo }) {
   );
 }
 
+function BriefRow({ brief }: { brief: Brief }) {
+  return (
+    <div className="relative border-l-2 border-blue-500 bg-blue-50/30 p-3 dark:bg-blue-900/10">
+      <p className="text-sm leading-relaxed">
+        <InlineMarkdown text={brief.text} />
+      </p>
+    </div>
+  );
+}
+
 const TASK_BOARD_LIMIT = 6;
 
 function StatusCard({ title, children, className = "" }: { title: string, children: React.ReactNode, className?: string }) {
@@ -181,22 +218,25 @@ export default function Home() {
   const entries = parseChangelog(md);
   const latest = entries[0];
   const gitStatus = getGitStatus();
+  
   const todos = loadTodos();
-  const active = sortActive(todos);
+  const activeTasks = sortActive(todos);
   const doneCount = todos.filter((t) => t.done).length;
-  const overflow = Math.max(0, active.length - TASK_BOARD_LIMIT);
+  const taskOverflow = Math.max(0, activeTasks.length - TASK_BOARD_LIMIT);
+
+  const briefs = loadBriefs();
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
       <header className="mb-8 flex items-end justify-between border-b border-zinc-200 pb-6 dark:border-zinc-800">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Shared Brain</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Shared Brain</h1>
           <p className="text-xs font-mono text-zinc-500">v0.1.0-alpha // command center</p>
         </div>
         <div className="text-right">
           <div className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${latest?.state === "in-flight" ? "animate-pulse bg-amber-500" : "bg-emerald-500"}`} />
-            <span className="text-xs font-bold uppercase tracking-wider">
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
               {latest?.state === "in-flight" ? "System Locked" : "System Ready"}
             </span>
           </div>
@@ -216,13 +256,13 @@ export default function Home() {
                   <span className="text-zinc-400">@</span>
                   <span className="font-mono text-zinc-600 dark:text-zinc-400">{latest.machine}</span>
                 </div>
-                <h2 className="mt-1 text-lg font-semibold leading-tight">{latest.goal}</h2>
+                <h2 className="mt-1 text-lg font-semibold leading-tight text-zinc-900 dark:text-zinc-100">{latest.goal}</h2>
                 <p className="mt-2 text-xs text-zinc-500 font-mono">{latest.date}</p>
               </div>
               {latest.state === "in-flight" && latest.next && (
                 <div className="flex-1 rounded-lg border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-900/50 dark:bg-amber-900/10 md:max-w-xs">
                   <span className="text-[9px] font-bold uppercase tracking-tighter text-amber-600 dark:text-amber-400">Handoff Note</span>
-                  <p className="mt-1 text-xs leading-relaxed text-amber-900 dark:text-amber-200 line-clamp-3">
+                  <p className="mt-1 text-xs leading-relaxed text-amber-900 dark:text-amber-200 line-clamp-3 italic">
                     {latest.next}
                   </p>
                 </div>
@@ -239,7 +279,7 @@ export default function Home() {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-mono text-zinc-500 text-xs">Branch</span>
-                <span className="font-mono font-bold">{gitStatus.branch}</span>
+                <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{gitStatus.branch}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Sync Status</span>
@@ -274,28 +314,28 @@ export default function Home() {
         {/* Task Board — parses TODO.md */}
         <StatusCard title="Tasks" className="lg:col-span-4">
           {todos.length === 0 ? (
-            <p className="text-xs text-zinc-500">No tasks — TODO.md is empty or unparseable.</p>
+            <p className="text-xs text-zinc-500 italic">No tasks found.</p>
           ) : (
             <>
               <div className="mb-2 flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                <span>{active.length} active</span>
+                <span>{activeTasks.length} active</span>
                 <span>{doneCount} done</span>
               </div>
-              <ul>
-                {active.slice(0, TASK_BOARD_LIMIT).map((t, i) => (
+              <ul className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                {activeTasks.slice(0, TASK_BOARD_LIMIT).map((t, i) => (
                   <TaskRow key={i} todo={t} />
                 ))}
               </ul>
-              {overflow > 0 && (
+              {taskOverflow > 0 && (
                 <p className="mt-2 font-mono text-[10px] italic text-zinc-400">
-                  + {overflow} more in TODO.md
+                  + {taskOverflow} more in TODO.md
                 </p>
               )}
             </>
           )}
         </StatusCard>
 
-        {/* Changelog Timeline */}
+        {/* Session Log Timeline */}
         <StatusCard title="Session Log" className="lg:col-span-8">
           <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
             <ol className="space-y-6">
@@ -308,7 +348,7 @@ export default function Home() {
                       {e.state}
                     </span>
                   </div>
-                  <h4 className="text-sm font-semibold leading-tight">{e.goal}</h4>
+                  <h4 className="text-sm font-semibold leading-tight text-zinc-900 dark:text-zinc-100">{e.goal}</h4>
                   <div className="mt-2 space-y-2">
                     {e.whatChanged.length > 0 && (
                       <ul className="list-disc pl-4 text-[11px] text-zinc-500 space-y-0.5">
@@ -325,11 +365,19 @@ export default function Home() {
           </div>
         </StatusCard>
 
-        {/* Placeholder for Briefs (Phase 3) */}
+        {/* Briefing Board — parses docs/BRIEFS.md */}
         <StatusCard title="Briefing Board" className="lg:col-span-12">
-          <div className="flex h-16 items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-lg">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-700">Phase 3: docs/BRIEFS.md</span>
-          </div>
+          {briefs.length === 0 ? (
+            <div className="flex h-16 items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-lg text-zinc-300">
+              <span className="text-[10px] font-bold uppercase tracking-widest">No active briefs</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {briefs.map((b, i) => (
+                <BriefRow key={i} brief={b} />
+              ))}
+            </div>
+          )}
         </StatusCard>
 
       </div>

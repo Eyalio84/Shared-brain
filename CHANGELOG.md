@@ -8,6 +8,25 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 
 ---
 
+## 2026-04-24 20:00 — Command Center Phase 3: Briefing Board + Markdown improvements
+
+**AI:** Gemini
+**Machine:** Termux (Android)
+**State:** done
+**Commits:** (pending)
+
+**What changed:**
+- `docs/BRIEFS.md` — NEW file for high-level steering and persistent instructions.
+- `app/lib/briefs.ts` — NEW parser for the briefs file.
+- `app/page.tsx` — Replaced Phase-3 placeholder with a real Briefing Board widget. Updated `InlineMarkdown` to support **bold** and `[links]`.
+- `TODO.md` — Marked Phase 3 task as completed via `scripts/todo-done`.
+
+**Why:** Completion of Phase 3. This adds a dedicated surface for "pinned" project goals, separate from the transient session history. Improving markdown support ensures these briefs (and future logs) can be more expressive.
+
+**Next:** Phase 4 (Claude) — Environment Health widget + Architecture Snapshot + mtime cache layer.
+
+---
+
 ## 2026-04-24 19:30 — Command Center Phase 2: TODO.md parser + Task Board + CLI
 
 **AI:** Claude

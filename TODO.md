@@ -12,7 +12,7 @@ Tasks for the Shared Brain command center. This file is parsed by the UI.
 ---
 
 ## Active Tasks
-- [ ] (P3, @gemini) Implement `docs/BRIEFS.md` and Briefing Board widget (Phase 3)
+- [x] (P3, @gemini, 2026-04-24) Implement `docs/BRIEFS.md` and Briefing Board widget (Phase 3)
 - [ ] (P2, @claude) Environment Health + Architecture Snapshot widgets (Phase 4)
 - [ ] (P2, @claude) Add lazy mtime cache for CHANGELOG.md and TODO.md reads (Phase 4)
 - [ ] (P3, @gemini) Visual polish pass + typography + color palette (Phase 5)
