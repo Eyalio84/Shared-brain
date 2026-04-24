@@ -82,6 +82,32 @@ Not every machine runs every part of this project. Know your environment.
 
 Termux is an editing station. Runtime happens elsewhere via git sync. If you're on Termux and tempted to run `npm run dev`, stop — commit, push, and run it in proot Ubuntu or on laptop.
 
+## Task management — TODO.md
+
+`TODO.md` (repo root) is the canonical, machine-parseable todo list. The UI renders it in the Task Board widget; agents edit it via the two helper scripts below.
+
+**Inline schema** (one task per line):
+
+```
+- [ ] (P1, @claude) Title of the task — ref: path/or/url
+- [x] (P1, @claude, 2026-04-24) Title — ref: path
+```
+
+- `[ ]` / `[x]` — checkbox (required).
+- Parens group contains comma-separated tags. Recognised: `P1`/`P2`/`P3` (priority), `@agent` (owner), `YYYY-MM-DD` (completion date on `[x]` tasks). Order inside the parens is free; unknown tokens are ignored.
+- Title is the freeform text between the parens and (optionally) `— ref:`.
+- `— ref:` is optional and takes a file path or URL.
+
+**Scripts** (run from repo root):
+
+- `./scripts/todo-add <P1|P2|P3> <@owner> "<title>" [ref]` — appends a new unchecked task under `## Active Tasks`.
+- `./scripts/todo-done "<substring>"` — flips the first unchecked task whose title contains the substring; appends today's date to the parens group. Case-insensitive. If multiple match, only the first is flipped and the rest are reported on stderr.
+
+**Rules of thumb:**
+- Agents edit `TODO.md` directly via the scripts or by hand. The UI is read-only — it reflects `TODO.md` on next page load, not via live mutation.
+- Owner in parens is the assignee, not the closer. If a different agent actually closes the task, leave the owner tag alone; the completion date records "when", not "by whom".
+- Unique enough substrings only. `./scripts/todo-done "parser"` beats `./scripts/todo-done "the"`.
+
 ## Conventions
 
 - **Files:** `app/` for routes (Next 16 App Router). No `src/` directory.
@@ -120,11 +146,15 @@ See `docs/ARCHITECTURE.md` for the full tree + module table. Hot files:
 | `CLAUDE.md` | One-line pointer to `AGENTS.md`. |
 | `GEMINI.md` | One-line pointer to `AGENTS.md`. |
 | `CHANGELOG.md` | Session-by-session narrative log. Read the latest entry first. |
+| `TODO.md` | Canonical todo list. Rendered in the Task Board widget. Edit via `scripts/todo-add` / `scripts/todo-done`. |
 | `docs/ARCHITECTURE.md` | File tree + module table. |
 | `docs/DECISIONS.md` | Why choices were made. |
-| `app/page.tsx` | Session Log viewer — the app. |
+| `app/page.tsx` | Command Center dashboard (Bento widgets). |
+| `app/lib/todo.ts` | TODO.md parser (server-only module). |
 | `app/api/commits/route.ts` | Returns recent git commits as JSON. |
 | `scripts/smoke.sh` | Fast health check — typecheck + build. |
+| `scripts/todo-add` | Append a new task to TODO.md. |
+| `scripts/todo-done` | Flip the first matching unchecked task to `[x]` with today's date. |
 
 ## When stuck
 

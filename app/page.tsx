@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { loadTodos, sortActive, type Todo } from "./lib/todo";
 
 type EntryState = "done" | "in-flight";
 
@@ -113,6 +114,56 @@ function InlineMarkdown({ text }: { text: string }) {
   );
 }
 
+function PriorityBadge({ priority }: { priority: Todo["priority"] }) {
+  if (!priority) {
+    return (
+      <span className="inline-flex items-center rounded bg-zinc-100 px-1 font-mono text-[9px] font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500">
+        --
+      </span>
+    );
+  }
+  const cls =
+    priority === "P1"
+      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      : priority === "P2"
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+  return (
+    <span className={`inline-flex items-center rounded px-1 font-mono text-[9px] font-bold ${cls}`}>
+      {priority}
+    </span>
+  );
+}
+
+function TaskRow({ todo }: { todo: Todo }) {
+  return (
+    <li className="flex items-start gap-2 py-1.5 border-b border-zinc-100 last:border-0 dark:border-zinc-900">
+      <span
+        className={`mt-0.5 inline-block h-3 w-3 shrink-0 rounded-sm border ${todo.done ? "border-emerald-400 bg-emerald-400" : "border-zinc-300 dark:border-zinc-700"}`}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <PriorityBadge priority={todo.priority} />
+          {todo.owner && (
+            <span className="font-mono text-[10px] text-zinc-500">{todo.owner}</span>
+          )}
+        </div>
+        <p className={`mt-0.5 text-xs leading-snug ${todo.done ? "text-zinc-400 line-through" : "text-zinc-800 dark:text-zinc-200"}`}>
+          {todo.title}
+        </p>
+        {todo.ref && (
+          <code className="mt-0.5 block truncate font-mono text-[10px] text-zinc-400">
+            {todo.ref}
+          </code>
+        )}
+      </div>
+    </li>
+  );
+}
+
+const TASK_BOARD_LIMIT = 6;
+
 function StatusCard({ title, children, className = "" }: { title: string, children: React.ReactNode, className?: string }) {
   return (
     <section className={`rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 ${className}`}>
@@ -130,6 +181,10 @@ export default function Home() {
   const entries = parseChangelog(md);
   const latest = entries[0];
   const gitStatus = getGitStatus();
+  const todos = loadTodos();
+  const active = sortActive(todos);
+  const doneCount = todos.filter((t) => t.done).length;
+  const overflow = Math.max(0, active.length - TASK_BOARD_LIMIT);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
@@ -216,11 +271,28 @@ export default function Home() {
           )}
         </StatusCard>
 
-        {/* Placeholder for TODOs (Phase 2) */}
-        <StatusCard title="Tasks" className="lg:col-span-4 h-64 lg:h-auto">
-          <div className="flex h-full flex-col items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-lg">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300 dark:text-zinc-700">Phase 2: TODO.md Board</span>
-          </div>
+        {/* Task Board — parses TODO.md */}
+        <StatusCard title="Tasks" className="lg:col-span-4">
+          {todos.length === 0 ? (
+            <p className="text-xs text-zinc-500">No tasks — TODO.md is empty or unparseable.</p>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                <span>{active.length} active</span>
+                <span>{doneCount} done</span>
+              </div>
+              <ul>
+                {active.slice(0, TASK_BOARD_LIMIT).map((t, i) => (
+                  <TaskRow key={i} todo={t} />
+                ))}
+              </ul>
+              {overflow > 0 && (
+                <p className="mt-2 font-mono text-[10px] italic text-zinc-400">
+                  + {overflow} more in TODO.md
+                </p>
+              )}
+            </>
+          )}
         </StatusCard>
 
         {/* Changelog Timeline */}

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# todo-add — append a new task to TODO.md under "Active Tasks".
+#
+# Usage:
+#   scripts/todo-add <P1|P2|P3> <@owner> "<title>" [ref]
+#
+# Example:
+#   scripts/todo-add P2 @claude "Implement BRIEFS parser" docs/BRIEFS.md
+#
+# The new line is appended immediately after the "## Active Tasks" heading.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+die() { echo "todo-add: $1" >&2; exit 2; }
+usage() { echo "usage: $0 <P1|P2|P3> <@owner> \"<title>\" [ref]" >&2; exit 2; }
+
+[ "$#" -ge 3 ] || usage
+PRIORITY="$1"
+OWNER="$2"
+TITLE="$3"
+REF="${4:-}"
+
+case "$PRIORITY" in P1|P2|P3) ;; *) die "priority must be P1, P2, or P3";; esac
+case "$OWNER" in @*) ;; *) die "owner must start with @";; esac
+[ -n "$TITLE" ] || die "title is required"
+
+TODO_FILE="TODO.md"
+[ -f "$TODO_FILE" ] || die "TODO.md not found in $(pwd)"
+
+if [ -n "$REF" ]; then
+  LINE="- [ ] (${PRIORITY}, ${OWNER}) ${TITLE} — ref: ${REF}"
+else
+  LINE="- [ ] (${PRIORITY}, ${OWNER}) ${TITLE}"
+fi
+
+# Insert after the "## Active Tasks" line.
+if ! grep -q "^## Active Tasks" "$TODO_FILE"; then
+  die "'## Active Tasks' section not found in TODO.md"
+fi
+
+awk -v line="$LINE" '
+  /^## Active Tasks$/ { print; print line; inserted=1; next }
+  { print }
+  END { if (!inserted) exit 3 }
+' "$TODO_FILE" > "${TODO_FILE}.tmp" && mv "${TODO_FILE}.tmp" "$TODO_FILE"
+
+echo "added: $LINE"

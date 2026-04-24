@@ -8,11 +8,14 @@ shared-brain/
 ├── CLAUDE.md              → AGENTS.md (Claude Code import)
 ├── GEMINI.md              → AGENTS.md (explicit pointer)
 ├── CHANGELOG.md           Session-by-session log
+├── TODO.md                Canonical task list (parsed by UI Task Board)
 ├── README.md              Human-facing overview
 ├── app/
 │   ├── layout.tsx         Root layout, fonts, metadata
-│   ├── page.tsx           Session Log viewer — reads CHANGELOG.md
+│   ├── page.tsx           Command Center dashboard (Bento widgets)
 │   ├── globals.css        Tailwind base + tokens
+│   ├── lib/
+│   │   └── todo.ts        TODO.md parser (server-only)
 │   └── api/
 │       └── commits/
 │           └── route.ts   GET /api/commits → recent git log as JSON
@@ -23,7 +26,9 @@ shared-brain/
 │       ├── COMMAND_CENTER_PHASE_1.md
 │       └── COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md
 ├── scripts/
-│   └── smoke.sh           Typecheck + build sanity
+│   ├── smoke.sh           Typecheck + build sanity
+│   ├── todo-add           Append task to TODO.md
+│   └── todo-done          Flip first matching task to [x]
 ├── public/                Static assets (Next default)
 ├── next.config.ts
 ├── package.json
@@ -42,21 +47,24 @@ find . -maxdepth 3 -not -path './node_modules/*' -not -path './.next/*' -not -pa
 | Path | Role | Notable |
 |---|---|---|
 | `app/layout.tsx` | Root layout. Loads Geist fonts, sets metadata. | Server component. |
-| `app/page.tsx` | Session Log viewer. Reads `CHANGELOG.md` from disk, parses entries, renders timeline. | Server component; uses `node:fs` directly. Runtime: nodejs. |
+| `app/page.tsx` | Command Center dashboard. Renders Bento widgets: Pulse, Git Monitor, Task Board, Session Log, Briefing Board placeholder. Reads `CHANGELOG.md` + `TODO.md` + `git status` from disk. | Server component; `node:fs` + `child_process` directly. Runtime: nodejs. |
+| `app/lib/todo.ts` | Parses `TODO.md` inline-tag schema into typed `Todo` objects. | Pure module (fs-reader only in `loadTodos()`). Exports `parseTodos`, `sortActive`, `loadTodos`. |
 | `app/api/commits/route.ts` | Returns the last 20 commits as JSON. | Shells out to `git log` via a Node child process. Node runtime. Dynamic (no caching). |
 | `app/globals.css` | Tailwind v4 base + project tokens. | Tailwind v4 uses `@import "tailwindcss";` — no separate config file unless overrides needed. |
 | `docs/PROPOSALS/` | Design documents for major feature upgrades. | Active proposal: Command Center Phase 1. |
 
 ## Data flow
 
-The Session Log viewer is read-only:
+The dashboard is a read-only projection of repo state:
 
 ```
-CHANGELOG.md  →  app/page.tsx (fs.readFileSync)  →  parseChangelog()  →  rendered timeline
-git log       →  app/api/commits (git child process)  →  JSON response  →  (future: client fetch)
+CHANGELOG.md  →  app/page.tsx (fs.readFileSync)    →  parseChangelog()   →  Pulse + Session Log
+TODO.md       →  app/lib/todo.ts (loadTodos)       →  parseTodos()       →  Task Board
+git status    →  app/page.tsx (execSync)           →  getGitStatus()     →  Git Monitor
+git log       →  app/api/commits (child process)   →  JSON               →  (future: client fetch)
 ```
 
-No database. No client-side state. Refreshing the page re-reads the files.
+No database. No client-side state. Mutations to todos happen via `scripts/todo-add` / `scripts/todo-done`, which edit `TODO.md` in place — the UI reflects the change on next request.
 
 ## Build + deploy
 
