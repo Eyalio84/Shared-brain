@@ -20,7 +20,8 @@ shared-brain/
 │   ├── ARCHITECTURE.md    This file
 │   ├── DECISIONS.md       Rationale log
 │   └── PROPOSALS/         Future upgrade designs
-│       └── COMMAND_CENTER_PHASE_1.md
+│       ├── COMMAND_CENTER_PHASE_1.md
+│       └── COMMAND_CENTER_PHASE_1_OPUS_REVIEW.md
 ├── scripts/
 │   └── smoke.sh           Typecheck + build sanity
 ├── public/                Static assets (Next default)
