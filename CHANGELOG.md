@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Claude
 **Machine:** proot Ubuntu (Android, same device as Termux)
 **State:** done
-**Commits:** (pending)
+**Commits:** 06be461 (session close), {hash-follow-up}
 
 **What changed:**
 - `package.json` — added `-H localhost` to the `dev` script. Without it, `next dev` crashes on proot with `uv_interface_addresses: Unknown system error 13` (EACCES on `os.networkInterfaces()`). With an explicit hostname, Next skips that lookup path entirely (see `next/dist/server/lib/start-server.js:289` — `hostname ?? getNetworkHost(...)`). Harmless on laptop/PC.
