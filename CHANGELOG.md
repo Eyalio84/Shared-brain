@@ -13,7 +13,7 @@ Every session (Claude, Gemini, any agent) appends an entry here at session end, 
 **AI:** Gemini
 **Machine:** Termux (Android)
 **State:** done
-**Commits:** (pending)
+**Commits:** 17ab139
 
 **What changed:**
 - `docs/BRIEFS.md` — NEW file for high-level steering and persistent instructions.
